@@ -13,7 +13,7 @@
 
 @interface RootViewController : UITableViewController <NameEditorViewControllerDelegate>
 
-@property (strong, nonatomic) NSMutableOrderedSet *data;
+@property (strong, nonatomic) NSMutableArray *photoAlbums;
 @property (strong, nonatomic) DetailViewController *detailViewController;
 
 @end

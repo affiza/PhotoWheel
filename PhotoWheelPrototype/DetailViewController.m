@@ -10,11 +10,13 @@
 #import "RootViewController.h"
 #import "WheelView.h"
 #import "PhotoWheelViewNub.h"
+#import "GlobalPhotoKeys.h"
 
 @interface DetailViewController ()
 @property (strong, nonatomic) UIPopoverController *popoverController;
 @property (strong, nonatomic) NSArray *data;
 @property (strong, nonatomic) PhotoWheelViewNub *selectedNubView;
+@property (assign, nonatomic) NSUInteger selectedNubViewIndex;
 @property (strong, nonatomic) UIImagePickerController *imagePickerController;
 @property (assign, nonatomic) BOOL usingCamera;
 @end
@@ -26,8 +28,11 @@
 @synthesize data = data_;
 @synthesize wheelView = wheelView_;
 @synthesize selectedNubView = selectedNubView_;
+@synthesize selectedNubViewIndex = selectedNubViewIndex_;
 @synthesize imagePickerController = imagePickerController_;
 @synthesize usingCamera = usingCamera_;
+
+@synthesize photoAlbum = photoAlbum_;
 
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
 {
@@ -52,13 +57,11 @@
 {
    [super viewDidLoad];
    
-   UIImage *defaultPhoto = [UIImage imageNamed:@"defaultPhoto.png"];
    CGRect nubFrame = CGRectMake(0, 0, 75, 75);
    NSInteger count = 10;
    NSMutableArray *newArray = [[NSMutableArray alloc] initWithCapacity:count];
    for (NSInteger index = 0; index < count; index++) {
       PhotoWheelViewNub *newNub = [[PhotoWheelViewNub alloc] initWithFrame:nubFrame];
-      [newNub setImage:defaultPhoto];
       
       UITapGestureRecognizer *doubleTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(nubDoubleTapped:)];
       [doubleTap setNumberOfTapsRequired:2];
@@ -193,6 +196,13 @@
    
    UIImage *image = [info objectForKey:UIImagePickerControllerOriginalImage];
    [self.selectedNubView setImage:image];
+	
+	NSData *photoData = UIImageJPEGRepresentation(image, 0.8);
+	NSDictionary *newPhotoEntry = [NSDictionary dictionaryWithObjectsAndKeys:photoData, kPhotoDataKey, [NSDate date], kPhotoDateAddedKey, nil];
+	NSMutableArray *photos = [[self photoAlbum] objectForKey:kPhotoAlbumPhotosKey];
+	[photos replaceObjectAtIndex:[self selectedNubViewIndex] withObject:newPhotoEntry];
+	
+	[[NSNotificationCenter defaultCenter] postNotificationName:kPhotoAlbumSaveNotification object:self];
 
    if ([self usingCamera]) {
       [self setUsingCamera:NO];
@@ -231,6 +241,7 @@
 - (void)nubTapped:(id)sender
 {
    [self setSelectedNubView:(PhotoWheelViewNub *)[sender view]];
+	[self setSelectedNubViewIndex:[[self data] indexOfObject:[self selectedNubView]]];
    if ([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera]) {
       [self presentAddPhotoMenu];
    } else {
@@ -243,4 +254,21 @@
    NSLog(@"%s", __PRETTY_FUNCTION__);
 }
 
+#pragma mark - Accessors
+- (void)setPhotoAlbum:(NSMutableDictionary *)photoAlbum
+{
+	photoAlbum_ = photoAlbum;
+	
+	UIImage *defaultPhoto = [UIImage imageNamed:@"defaultPhoto.png"];
+	for (NSUInteger index=0; index<10; index++) {
+		PhotoWheelViewNub *nub = [[self data] objectAtIndex:index];
+		NSDictionary *photoInfo = [[[self photoAlbum] objectForKey:kPhotoAlbumPhotosKey] objectAtIndex:index];
+		NSData *imageData = [photoInfo objectForKey:kPhotoDataKey];
+		if (imageData != nil) {
+			[nub setImage:[UIImage imageWithData:imageData]];
+		} else {
+			[nub setImage:defaultPhoto];
+		}
+	}
+}
 @end
