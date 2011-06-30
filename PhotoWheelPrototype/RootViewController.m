@@ -17,7 +17,7 @@
 
 @implementation RootViewController
 
-@synthesize photoAlbums = photoAlbums_;
+@synthesize data = data_;
 @synthesize detailViewController = detailViewController_;
 @synthesize currentAlbumIndex;
 
@@ -47,7 +47,7 @@
 
 - (void)savePhotoAlbum
 {
-   [[self photoAlbums] writeToURL:[self photoAlbumPath] atomically:YES];
+   [[self data] writeToURL:[self photoAlbumPath] atomically:YES];
 }
 
 - (void)photoAlbumSaveNeeded:(NSNotification *)notification
@@ -75,12 +75,12 @@
    NSData *photoAlbumData = [NSData dataWithContentsOfURL:[self photoAlbumPath]];
    if (photoAlbumData != nil) {
       NSMutableArray *albums = [NSPropertyListSerialization propertyListWithData:photoAlbumData options:NSPropertyListMutableContainers format:nil error:nil];
-      [self setPhotoAlbums:albums];
+      [self setData:albums];
    } else {
       savedAlbums = [NSMutableArray array];
       // Create an initial album
       [savedAlbums addObject:[self newPhotoAlbumWithName:@"First album"]];
-      [self setPhotoAlbums:savedAlbums];
+      [self setData:savedAlbums];
       [self savePhotoAlbum];
    }
 }
@@ -96,7 +96,7 @@
    
    [self readSavedPhotoAlbums];
 
-   [[self detailViewController] setPhotoAlbum:[[self photoAlbums] objectAtIndex:0]];
+   [[self detailViewController] setPhotoAlbum:[[self data] objectAtIndex:0]];
 
    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(photoAlbumSaveNeeded:) name:kPhotoAlbumSaveNotification object:[self detailViewController]];
    
@@ -156,7 +156,7 @@
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-   NSInteger count = [[self photoAlbums] count];
+   NSInteger count = [[self data] count];
    return count;
 }
 
@@ -176,7 +176,7 @@
    }
    
    // Configure the cell.
-   NSDictionary *album = [[self photoAlbums] objectAtIndex:[indexPath row]];
+   NSDictionary *album = [[self data] objectAtIndex:[indexPath row]];
    [[cell textLabel] setText:[album objectForKey:kPhotoAlbumNameKey]];
    
    if ([indexPath row] == [self currentAlbumIndex]) {
@@ -193,7 +193,7 @@
    [newController setDelegate:self];
    [newController setEditing:YES];
    [newController setIndexPath:indexPath];
-   NSString *name = [[[self photoAlbums] objectAtIndex:[indexPath row]] objectForKey:kPhotoAlbumNameKey];
+   NSString *name = [[[self data] objectAtIndex:[indexPath row]] objectForKey:kPhotoAlbumNameKey];
    [newController setDefaultNameText:name];
    [newController setModalPresentationStyle:UIModalPresentationFormSheet];
    [self presentModalViewController:newController animated:YES];
@@ -207,7 +207,7 @@
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath
 {
    if (editingStyle == UITableViewCellEditingStyleDelete) {
-      [[self photoAlbums] removeObjectAtIndex:[indexPath row]];
+      [[self data] removeObjectAtIndex:[indexPath row]];
       [tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationFade];
       [self savePhotoAlbum];
    }   
@@ -215,7 +215,7 @@
 
 - (void)tableView:(UITableView *)tableView moveRowAtIndexPath:(NSIndexPath *)fromIndexPath toIndexPath:(NSIndexPath *)toIndexPath
 {
-   [[self photoAlbums] exchangeObjectAtIndex:[fromIndexPath row] withObjectAtIndex:[toIndexPath row]];
+   [[self data] exchangeObjectAtIndex:[fromIndexPath row] withObjectAtIndex:[toIndexPath row]];
    [self savePhotoAlbum];
 }
 
@@ -225,7 +225,7 @@
    [self setCurrentAlbumIndex:[indexPath row]];
    [tableView reloadRowsAtIndexPaths:[NSArray arrayWithObjects:indexPath, oldCurrentAlbumIndexPath, nil] withRowAnimation:UITableViewRowAnimationNone];
 
-   [[self detailViewController] setPhotoAlbum:[[self photoAlbums] objectAtIndex:0]];
+   [[self detailViewController] setPhotoAlbum:[[self data] objectAtIndex:[indexPath row]]];
 }
 
 #pragma mark - NameEditorViewControllerDelegate
@@ -235,11 +235,10 @@
    NSString *newName = [[controller nameTextField] text];
    if (newName && [newName length] > 0) {
       if ([controller isEditing]) {
-         NSMutableDictionary *photoAlbum = [[self photoAlbums] objectAtIndex:[[controller indexPath] row]];
+         NSMutableDictionary *photoAlbum = [[self data] objectAtIndex:[[controller indexPath] row]];
          [photoAlbum setObject:newName forKey:kPhotoAlbumNameKey];
-         //[[self data] replaceObjectAtIndex:[[controller indexPath] row] withObject:newName];
       } else {
-        [[self photoAlbums] addObject:[self newPhotoAlbumWithName:newName]];
+        [[self data] addObject:[self newPhotoAlbumWithName:newName]];
       }
       [self savePhotoAlbum];
       [[self tableView] reloadData];
