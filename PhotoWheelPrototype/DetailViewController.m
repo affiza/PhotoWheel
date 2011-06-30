@@ -11,6 +11,7 @@
 #import "WheelView.h"
 #import "PhotoWheelViewNub.h"
 #import "GlobalPhotoKeys.h"
+#import "NSString+uuidString.h"
 
 @interface DetailViewController ()
 @property (strong, nonatomic) UIPopoverController *popoverController;
@@ -95,18 +96,24 @@
 
 - (void)viewWillDisappear:(BOOL)animated
 {
-	[super viewWillDisappear:animated];
+   [super viewWillDisappear:animated];
 }
 
 - (void)viewDidDisappear:(BOOL)animated
 {
-	[super viewDidDisappear:animated];
+   [super viewDidDisappear:animated];
 }
 
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
 {
    // Return YES for supported orientations
    return YES;
+}
+
+#pragma mark - Utility
+- (NSURL *)documentsDirectory
+{
+   return [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject];
 }
 
 #pragma mark - Split view
@@ -196,13 +203,19 @@
    
    UIImage *image = [info objectForKey:UIImagePickerControllerOriginalImage];
    [self.selectedNubView setImage:image];
-	
-	NSData *photoData = UIImageJPEGRepresentation(image, 0.8);
-	NSDictionary *newPhotoEntry = [NSDictionary dictionaryWithObjectsAndKeys:photoData, kPhotoDataKey, [NSDate date], kPhotoDateAddedKey, nil];
-	NSMutableArray *photos = [[self photoAlbum] objectForKey:kPhotoAlbumPhotosKey];
-	[photos replaceObjectAtIndex:[self selectedNubViewIndex] withObject:newPhotoEntry];
-	
-	[[NSNotificationCenter defaultCenter] postNotificationName:kPhotoAlbumSaveNotification object:self];
+   
+   NSData *photoData = UIImageJPEGRepresentation(image, 0.8);
+   NSMutableDictionary *newPhotoEntry = [NSMutableDictionary dictionary];
+   [newPhotoEntry setObject:[NSDate date] forKey:kPhotoDateAddedKey];
+   
+   NSString *photoFilename = [[NSString uuidString] stringByAppendingPathExtension:@"jpg"];
+   [photoData writeToURL:[[self documentsDirectory] URLByAppendingPathComponent:photoFilename] atomically:YES];
+   [newPhotoEntry setObject:photoFilename forKey:kPhotoFilenameKey];
+   
+   NSMutableArray *photos = [[self photoAlbum] objectForKey:kPhotoAlbumPhotosKey];
+   [photos replaceObjectAtIndex:[self selectedNubViewIndex] withObject:newPhotoEntry];
+   
+   [[NSNotificationCenter defaultCenter] postNotificationName:kPhotoAlbumSaveNotification object:self];
 
    if ([self usingCamera]) {
       [self setUsingCamera:NO];
@@ -241,7 +254,7 @@
 - (void)nubTapped:(id)sender
 {
    [self setSelectedNubView:(PhotoWheelViewNub *)[sender view]];
-	[self setSelectedNubViewIndex:[[self data] indexOfObject:[self selectedNubView]]];
+   [self setSelectedNubViewIndex:[[self data] indexOfObject:[self selectedNubView]]];
    if ([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera]) {
       [self presentAddPhotoMenu];
    } else {
@@ -257,18 +270,24 @@
 #pragma mark - Accessors
 - (void)setPhotoAlbum:(NSMutableDictionary *)photoAlbum
 {
-	photoAlbum_ = photoAlbum;
-	
-	UIImage *defaultPhoto = [UIImage imageNamed:@"defaultPhoto.png"];
-	for (NSUInteger index=0; index<10; index++) {
-		PhotoWheelViewNub *nub = [[self data] objectAtIndex:index];
-		NSDictionary *photoInfo = [[[self photoAlbum] objectForKey:kPhotoAlbumPhotosKey] objectAtIndex:index];
-		NSData *imageData = [photoInfo objectForKey:kPhotoDataKey];
-		if (imageData != nil) {
-			[nub setImage:[UIImage imageWithData:imageData]];
-		} else {
-			[nub setImage:defaultPhoto];
-		}
-	}
+   photoAlbum_ = photoAlbum;
+   
+   UIImage *defaultPhoto = [UIImage imageNamed:@"defaultPhoto.png"];
+   for (NSUInteger index=0; index<10; index++) {
+      PhotoWheelViewNub *nub = [[self data] objectAtIndex:index];
+      NSDictionary *photoInfo = [[[self photoAlbum] objectForKey:kPhotoAlbumPhotosKey] objectAtIndex:index];
+      NSString *photoFilename = [photoInfo objectForKey:kPhotoFilenameKey];
+      NSData *imageData;
+      if (photoFilename != nil) {
+         imageData = [NSData dataWithContentsOfURL:[[self documentsDirectory] URLByAppendingPathComponent:photoFilename]];
+      } else {
+         imageData = nil;
+      }
+      if (imageData != nil) {
+         [nub setImage:[UIImage imageWithData:imageData]];
+      } else {
+         [nub setImage:defaultPhoto];
+      }
+   }
 }
 @end

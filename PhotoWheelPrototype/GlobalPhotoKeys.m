@@ -15,5 +15,6 @@ const NSString *kPhotoAlbumFilename = @"photoAlbums.plist";
 
 const NSString *kPhotoDataKey = @"photoData";
 const NSString *kPhotoDateAddedKey = @"dateAdded";
+const NSString *kPhotoFilenameKey = @"filename";
 
 const NSString *kPhotoAlbumSaveNotification = @"save albums notification";

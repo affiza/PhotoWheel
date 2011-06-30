@@ -14,5 +14,6 @@ extern NSString *kPhotoAlbumFilename;
 
 extern NSString *kPhotoDataKey;
 extern NSString *kPhotoDateAddedKey;
+extern NSString *kPhotoFilenameKey;
 
 extern NSString *kPhotoAlbumSaveNotification;
