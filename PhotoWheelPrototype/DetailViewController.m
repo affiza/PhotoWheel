@@ -11,7 +11,7 @@
 #import "WheelView.h"
 #import "PhotoWheelViewNub.h"
 #import "GlobalPhotoKeys.h"
-#import "NSString+uuidString.h"
+#import "NSString+PWCategory.h"
 
 @interface DetailViewController ()
 @property (strong, nonatomic) UIPopoverController *popoverController;
@@ -208,7 +208,7 @@
    NSMutableDictionary *newPhotoEntry = [NSMutableDictionary dictionary];
    [newPhotoEntry setObject:[NSDate date] forKey:kPhotoDateAddedKey];
    
-   NSString *photoFilename = [[NSString uuidString] stringByAppendingPathExtension:@"jpg"];
+   NSString *photoFilename = [[NSString pw_uuidString] stringByAppendingPathExtension:@"jpg"];
    [photoData writeToURL:[[self documentsDirectory] URLByAppendingPathComponent:photoFilename] atomically:YES];
    [newPhotoEntry setObject:photoFilename forKey:kPhotoFilenameKey];
    

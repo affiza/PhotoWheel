@@ -25,7 +25,7 @@
 		68DA2C5B13A99DD900BC0B80 /* DetailViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 68DA2C5A13A99DD900BC0B80 /* DetailViewController.m */; };
 		68DA2C5E13A99DD900BC0B80 /* RootViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 68DA2C5C13A99DD900BC0B80 /* RootViewController.xib */; };
 		68DA2C6113A99DD900BC0B80 /* DetailViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 68DA2C5F13A99DD900BC0B80 /* DetailViewController.xib */; };
-		EE69508813BD129D00640B74 /* NSString+uuidString.m in Sources */ = {isa = PBXBuildFile; fileRef = EE69508713BD129D00640B74 /* NSString+uuidString.m */; };
+		EE69508813BD129D00640B74 /* NSString+PWCategory.m in Sources */ = {isa = PBXBuildFile; fileRef = EE69508713BD129D00640B74 /* NSString+PWCategory.m */; };
 		EEE02D2813BBE24900C1120D /* GlobalPhotoKeys.m in Sources */ = {isa = PBXBuildFile; fileRef = EEE02D2713BBE24900C1120D /* GlobalPhotoKeys.m */; };
 /* End PBXBuildFile section */
 
@@ -57,8 +57,8 @@
 		68DA2C5A13A99DD900BC0B80 /* DetailViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DetailViewController.m; sourceTree = "<group>"; };
 		68DA2C5D13A99DD900BC0B80 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/RootViewController.xib; sourceTree = "<group>"; };
 		68DA2C6013A99DD900BC0B80 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/DetailViewController.xib; sourceTree = "<group>"; };
-		EE69508613BD129D00640B74 /* NSString+uuidString.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+uuidString.h"; sourceTree = "<group>"; };
-		EE69508713BD129D00640B74 /* NSString+uuidString.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+uuidString.m"; sourceTree = "<group>"; };
+		EE69508613BD129D00640B74 /* NSString+PWCategory.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+PWCategory.h"; sourceTree = "<group>"; };
+		EE69508713BD129D00640B74 /* NSString+PWCategory.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+PWCategory.m"; sourceTree = "<group>"; };
 		EEE02D2613BBE24900C1120D /* GlobalPhotoKeys.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GlobalPhotoKeys.h; sourceTree = "<group>"; };
 		EEE02D2713BBE24900C1120D /* GlobalPhotoKeys.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GlobalPhotoKeys.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -130,8 +130,8 @@
 				68DA2C4A13A99DD800BC0B80 /* Supporting Files */,
 				EEE02D2613BBE24900C1120D /* GlobalPhotoKeys.h */,
 				EEE02D2713BBE24900C1120D /* GlobalPhotoKeys.m */,
-				EE69508613BD129D00640B74 /* NSString+uuidString.h */,
-				EE69508713BD129D00640B74 /* NSString+uuidString.m */,
+				EE69508613BD129D00640B74 /* NSString+PWCategory.h */,
+				EE69508713BD129D00640B74 /* NSString+PWCategory.m */,
 			);
 			path = PhotoWheelPrototype;
 			sourceTree = "<group>";
@@ -222,7 +222,7 @@
 				6839EFBB13B5F7AB00BB83E9 /* PhotoWheelViewNub.m in Sources */,
 				6839EFC413B6034C00BB83E9 /* OneFingerRotationGestureRecognizer.m in Sources */,
 				EEE02D2813BBE24900C1120D /* GlobalPhotoKeys.m in Sources */,
-				EE69508813BD129D00640B74 /* NSString+uuidString.m in Sources */,
+				EE69508813BD129D00640B74 /* NSString+PWCategory.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

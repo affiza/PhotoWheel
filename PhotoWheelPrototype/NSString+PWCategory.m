@@ -1,16 +1,16 @@
 //
-//  NSString+uuidString.m
+//  NSString+PWCategory.m
 //  PhotoWheelPrototype
 //
 //  Created by Tom Harrington on 6/30/11.
 //  Copyright 2011 White Peak Software Inc. All rights reserved.
 //
 
-#import "NSString+uuidString.h"
+#import "NSString+PWCategory.h"
 
-@implementation NSString (NSString_uuidString)
+@implementation NSString (PWCategory)
 
-+ (NSString *)uuidString
++ (NSString *)pw_uuidString
 {
 	CFUUIDRef uuid = CFUUIDCreate(kCFAllocatorDefault);
 	CFStringRef uuidCFString = CFUUIDCreateString(kCFAllocatorDefault, uuid);

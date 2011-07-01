@@ -1,5 +1,5 @@
 //
-//  NSString+uuidString.h
+//  NSString+PWCategory.h
 //  PhotoWheelPrototype
 //
 //  Created by Tom Harrington on 6/30/11.
@@ -8,8 +8,8 @@
 
 
 
-@interface NSString (NSString_uuidString)
+@interface NSString (PWCategory)
 
-+ (NSString *)uuidString;
++ (NSString *)pw_uuidString;
 
 @end
