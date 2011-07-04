@@ -205,11 +205,12 @@
    [self.selectedNubView setImage:image];
    
    NSData *photoData = UIImageJPEGRepresentation(image, 0.8);
-   NSMutableDictionary *newPhotoEntry = [NSMutableDictionary dictionary];
-   [newPhotoEntry setObject:[NSDate date] forKey:kPhotoDateAddedKey];
-   
+
    NSString *photoFilename = [[NSString pw_uuidString] stringByAppendingPathExtension:@"jpg"];
    [photoData writeToURL:[[self documentsDirectory] URLByAppendingPathComponent:photoFilename] atomically:YES];
+
+   NSMutableDictionary *newPhotoEntry = [NSMutableDictionary dictionary];
+   [newPhotoEntry setObject:[NSDate date] forKey:kPhotoDateAddedKey];
    [newPhotoEntry setObject:photoFilename forKey:kPhotoFilenameKey];
    
    NSMutableArray *photos = [[self photoAlbum] objectForKey:kPhotoAlbumPhotosKey];
