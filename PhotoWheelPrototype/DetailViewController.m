@@ -237,6 +237,7 @@
 - (void)cellTapped:(UIGestureRecognizer *)recognizer
 {
    [self setSelectedPhotoWheelViewCell:(PhotoWheelViewCell *)[recognizer view]];
+   [self setSelectedWheelViewCellIndex:[[self data] indexOfObject:[self selectedPhotoWheelViewCell]]];
 
    BOOL hasCamera = [UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera];
    if (hasCamera) {
