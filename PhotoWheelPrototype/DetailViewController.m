@@ -302,7 +302,7 @@
    [newPhotoEntry setObject:photoFilename forKey:kPhotoFilenameKey];
    
    NSMutableArray *photos = [[self photoAlbum] objectForKey:kPhotoAlbumPhotosKey];
-   [photos replaceObjectAtIndex:[self selectedNubViewIndex] withObject:newPhotoEntry];
+   [photos replaceObjectAtIndex:[self selectedWheelViewCellIndex] withObject:newPhotoEntry];
    
    [[NSNotificationCenter defaultCenter] postNotificationName:kPhotoAlbumSaveNotification object:self];
 
@@ -318,7 +318,7 @@
    
    UIImage *defaultPhoto = [UIImage imageNamed:@"defaultPhoto.png"];
    for (NSUInteger index=0; index<10; index++) {
-      PhotoWheelViewNub *nub = [[self data] objectAtIndex:index];
+      PhotoWheelViewCell *nub = [[self data] objectAtIndex:index];
       NSDictionary *photoInfo = [[[self photoAlbum] objectForKey:kPhotoAlbumPhotosKey] objectAtIndex:index];
       NSString *photoFilename = [photoInfo objectForKey:kPhotoFilenameKey];
       NSData *imageData;
