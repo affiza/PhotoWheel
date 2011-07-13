@@ -9,29 +9,32 @@
 #import "DetailViewController.h"
 #import "RootViewController.h"
 #import "WheelView.h"
-#import "PhotoWheelViewNub.h"
 #import "GlobalPhotoKeys.h"
 #import "NSString+PWCategory.h"
+#import "PhotoWheelViewCell.h"
 
 @interface DetailViewController ()
-@property (strong, nonatomic) UIPopoverController *popoverController;
 @property (strong, nonatomic) NSArray *data;
-@property (strong, nonatomic) PhotoWheelViewNub *selectedNubView;
-@property (assign, nonatomic) NSUInteger selectedNubViewIndex;
+@property (strong, nonatomic) UIPopoverController *popoverController;
+@property (strong, nonatomic) PhotoWheelViewCell *selectedPhotoWheelViewCell;
+@property (strong, nonatomic) UIActionSheet *actionSheet;
+@property (assign, nonatomic) NSUInteger selectedWheelViewCellIndex;
 @property (strong, nonatomic) UIImagePickerController *imagePickerController;
-@property (assign, nonatomic) BOOL usingCamera;
+- (void)configureView;
 @end
 
 @implementation DetailViewController
 
+@synthesize data = data_;
+@synthesize detailItem = _detailItem;
+@synthesize detailDescriptionLabel = _detailDescriptionLabel;
 @synthesize toolbar = _toolbar;
 @synthesize popoverController = _myPopoverController;
-@synthesize data = data_;
 @synthesize wheelView = wheelView_;
-@synthesize selectedNubView = selectedNubView_;
-@synthesize selectedNubViewIndex = selectedNubViewIndex_;
+@synthesize selectedPhotoWheelViewCell = selectedPhotoWheelViewCell;
+@synthesize actionSheet = actionSheet_;
+@synthesize selectedWheelViewCellIndex = selectedWheelViewCellIndex_;
 @synthesize imagePickerController = imagePickerController_;
-@synthesize usingCamera = usingCamera_;
 
 @synthesize photoAlbum = photoAlbum_;
 
@@ -40,11 +43,37 @@
    self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
    if (self) {
       self.title = NSLocalizedString(@"Detail", @"Detail");
+      
+      [self setImagePickerController:[[UIImagePickerController alloc] init]];
+      [self.imagePickerController setDelegate:self];
    }
    return self;
 }
 
 #pragma mark - Managing the detail item
+
+- (void)setDetailItem:(id)newDetailItem
+{
+   if (_detailItem != newDetailItem) {
+      _detailItem = newDetailItem;
+      
+      // Update the view.
+      [self configureView];
+   }
+   
+   if (self.popoverController != nil) {
+      [self.popoverController dismissPopoverAnimated:YES];
+   }        
+}
+
+- (void)configureView
+{
+   // Update the user interface for the detail item.
+   
+   if (self.detailItem) {
+      self.detailDescriptionLabel.text = [self.detailItem description];
+   }
+}
 
 - (void)didReceiveMemoryWarning
 {
@@ -57,22 +86,22 @@
 - (void)viewDidLoad
 {
    [super viewDidLoad];
-   
-   CGRect nubFrame = CGRectMake(0, 0, 75, 75);
+
+   CGRect cellFrame = CGRectMake(0, 0, 75, 75);
    NSInteger count = 10;
    NSMutableArray *newArray = [[NSMutableArray alloc] initWithCapacity:count];
    for (NSInteger index = 0; index < count; index++) {
-      PhotoWheelViewNub *newNub = [[PhotoWheelViewNub alloc] initWithFrame:nubFrame];
+      PhotoWheelViewCell *cell = [[PhotoWheelViewCell alloc] initWithFrame:cellFrame];
       
-      UITapGestureRecognizer *doubleTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(nubDoubleTapped:)];
+      UITapGestureRecognizer *doubleTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(cellDoubleTapped:)];
       [doubleTap setNumberOfTapsRequired:2];
-      [newNub addGestureRecognizer:doubleTap];
-
-      UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(nubTapped:)];
-      [tap requireGestureRecognizerToFail:doubleTap];
-      [newNub addGestureRecognizer:tap];
+      [cell addGestureRecognizer:doubleTap];
       
-      [newArray addObject:newNub];
+      UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(cellTapped:)];
+      [tap requireGestureRecognizerToFail:doubleTap];
+      [cell addGestureRecognizer:tap];
+      
+      [newArray addObject:cell];
    }
    [self setData:[newArray copy]];
 }
@@ -116,6 +145,13 @@
    return [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject];
 }
 
+- (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
+{
+   if ([self actionSheet]) {
+      [self.actionSheet dismissWithClickedButtonIndex:-1 animated:YES];
+   }
+}
+
 #pragma mark - Split view
 
 - (void)splitViewController:(UISplitViewController *)svc willHideViewController:(UIViewController *)aViewController withBarButtonItem:(UIBarButtonItem *)barButtonItem forPopoverController: (UIPopoverController *)pc
@@ -138,71 +174,123 @@
 
 #pragma mark - WheelViewDataSource Methods
 
-- (NSInteger)wheelViewNumberOfNubs:(WheelView *)wheelView
+- (NSInteger)wheelViewNumberOfCells:(WheelView *)wheelView
 {
-   return [self.data count];
+   NSInteger count = [self.data count];
+   return count;
 }
 
-- (WheelViewNub *)wheelView:(WheelView *)wheelView nubAtIndex:(NSInteger)index
+- (WheelViewCell *)wheelView:(WheelView *)wheelView cellAtIndex:(NSInteger)index
 {
-   WheelViewNub *nub = [self.data objectAtIndex:index];
-   return nub;
+   WheelViewCell *cell = [self.data objectAtIndex:index];
+   return cell;
 }
 
-#pragma mark - Photo Management
+#pragma mark - Image Picker Helper Methods
 
-- (void)presentAddPhotoMenu
+- (void)presentCamera
 {
-   if ([self popoverController]) {
-      [self.popoverController dismissPopoverAnimated:YES];
-      [self setPopoverController:nil];
-   }
-   
-   UIActionSheet *actionSheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:@"Cancel" destructiveButtonTitle:nil otherButtonTitles:@"Take Photo", @"Choose From Library", nil];
-   [actionSheet showFromRect:[self.selectedNubView frame] inView:[self wheelView] animated:YES];
+   // Display the camera.
+   [self.imagePickerController setSourceType:UIImagePickerControllerSourceTypeCamera];
+   [self presentModalViewController:[self imagePickerController] animated:YES];
 }
 
 - (void)presentPhotoLibrary
 {
-   if ([self popoverController]) {
-      [self.popoverController dismissPopoverAnimated:YES];
-      [self setPopoverController:nil];
-   }
-
-   UIImagePickerController *newImagePicker = [[UIImagePickerController alloc] init];
-   [newImagePicker setDelegate:self];
-   [newImagePicker setAllowsEditing:NO];
-   [newImagePicker setSourceType:UIImagePickerControllerSourceTypePhotoLibrary];
-   [self setImagePickerController:newImagePicker];
+   // Display assets from the photo library only.
+   [self.imagePickerController setSourceType:UIImagePickerControllerSourceTypePhotoLibrary];
    
-   UIPopoverController *popover = [[UIPopoverController alloc] initWithContentViewController:[self imagePickerController]];
-   [popover presentPopoverFromRect:[self.selectedNubView frame] inView:[self wheelView] permittedArrowDirections:UIPopoverArrowDirectionAny animated:YES];
-   [self setPopoverController:popover];
+   UIView *view = [self selectedPhotoWheelViewCell];
+   CGRect rect = [view bounds];
+   
+   UIPopoverController *newPopoverController = [[UIPopoverController alloc] initWithContentViewController:[self imagePickerController]];
+   [newPopoverController presentPopoverFromRect:rect inView:view permittedArrowDirections:UIPopoverArrowDirectionAny animated:YES];
+   [self setPopoverController:newPopoverController];
 }
 
-- (void)presentCamera
+- (void)presentPhotoPickerMenu
 {
-   UIImagePickerController *newImagePicker = [[UIImagePickerController alloc] init];
-   [newImagePicker setDelegate:self];
-   [newImagePicker setSourceType:UIImagePickerControllerSourceTypeCamera];
-   [self setImagePickerController:newImagePicker];
+   UIActionSheet *actionSheet = [[UIActionSheet alloc] init];
+   [actionSheet setDelegate:self];
+   [actionSheet addButtonWithTitle:@"Take Photo"];
+   [actionSheet addButtonWithTitle:@"Choose from Library"];
+   
+   UIView *view = [self selectedPhotoWheelViewCell];
+   CGRect rect = [view bounds];
+   [actionSheet showFromRect:rect inView:view animated:YES];
 
-   [self setUsingCamera:YES];
-   [self presentModalViewController:newImagePicker animated:YES];
+   [self setActionSheet:actionSheet];
+}
+
+#pragma mark - Actions
+
+- (IBAction)segmentedControlValueChanged:(id)sender
+{
+   NSInteger index = [sender selectedSegmentIndex];
+   if (index == 0) {
+      [self.wheelView setStyle:WheelViewStyleWheel];
+   } else {
+      [self.wheelView setStyle:WheelViewStyleCarousel];
+   }
+}
+
+- (void)cellTapped:(UIGestureRecognizer *)recognizer
+{
+   [self setSelectedPhotoWheelViewCell:(PhotoWheelViewCell *)[recognizer view]];
+
+   BOOL hasCamera = [UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera];
+   if (hasCamera) {
+      [self presentPhotoPickerMenu];
+   } else {
+      [self presentPhotoLibrary];
+   }
+}
+
+- (void)cellDoubleTapped:(UIGestureRecognizer *)recognizer
+{
+   NSLog(@"%s", __PRETTY_FUNCTION__);
+}
+
+#pragma mark - UIActionSheetDelegate Methods
+
+- (void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+   switch (buttonIndex) {
+      case 0:
+         [self presentCamera];
+         break;
+      case 1:
+         [self presentPhotoLibrary];
+         break;
+   }
+}
+
+- (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex
+{
+   [self setActionSheet:nil];
 }
 
 #pragma mark - UIImagePickerControllerDelegate Methods
 
 - (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary *)info
 {
-   UIPopoverController *popover = [self popoverController];
-   if (popover) {
-      [popover dismissPopoverAnimated:YES];
-      [self setPopoverController:nil];
-   }
+   // If the popover controller is available then
+   // assume the photo is selected from the library
+   // and not from the camera.
+   BOOL takenWithCamera = ([self popoverController] == nil);
    
+   // Dismiss the popover controller if available, 
+   // otherwise dismiss the camera view.
+   if ([self popoverController]) {
+      [self.popoverController dismissPopoverAnimated:YES];
+      [self setPopoverController:nil];
+   } else {
+      [self dismissModalViewControllerAnimated:YES];
+   }
+
+   // Retrieve and display the image.
    UIImage *image = [info objectForKey:UIImagePickerControllerOriginalImage];
-   [self.selectedNubView setImage:image];
+   [self.selectedPhotoWheelViewCell setImage:image];
    
    NSData *photoData = UIImageJPEGRepresentation(image, 0.8);
 
@@ -218,54 +306,9 @@
    
    [[NSNotificationCenter defaultCenter] postNotificationName:kPhotoAlbumSaveNotification object:self];
 
-   if ([self usingCamera]) {
-      [self setUsingCamera:NO];
-      [self dismissModalViewControllerAnimated:YES];
+   if (takenWithCamera) {
       UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil);
-    }
-}
-
-#pragma mark - UIActionSheetDelegate Methods
-
-- (void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
-{
-   switch (buttonIndex) {
-      case 0:
-         [self presentCamera];
-         break;
-      case 1:
-         [self presentPhotoLibrary];
-         break;
-      default:
-         break;
    }
-}
-
-#pragma mark - Actions
-
-- (IBAction)styleValueChanged:(id)sender
-{
-   if ([sender selectedSegmentIndex] == 0) {
-      [self.wheelView setStyle:WheelViewStyleWheel];
-   } else {
-      [self.wheelView setStyle:WheelViewStyleCarousel];
-   }
-}
-
-- (void)nubTapped:(id)sender
-{
-   [self setSelectedNubView:(PhotoWheelViewNub *)[sender view]];
-   [self setSelectedNubViewIndex:[[self data] indexOfObject:[self selectedNubView]]];
-   if ([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera]) {
-      [self presentAddPhotoMenu];
-   } else {
-      [self presentPhotoLibrary];
-   }
-}
-
-- (void)nubDoubleTapped:(id)sender
-{
-   NSLog(@"%s", __PRETTY_FUNCTION__);
 }
 
 #pragma mark - Accessors

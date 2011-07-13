@@ -9,13 +9,18 @@
 #import <UIKit/UIKit.h>
 #import "WheelView.h"
 
-@interface DetailViewController : UIViewController <UISplitViewControllerDelegate, WheelViewDataSource, UIActionSheetDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate>
+@interface DetailViewController : UIViewController <UISplitViewControllerDelegate, WheelViewDataSource, UIActionSheetDelegate, UINavigationControllerDelegate, UIImagePickerControllerDelegate>
+
+@property (strong, nonatomic) id detailItem;
+
+@property (strong, nonatomic) IBOutlet UILabel *detailDescriptionLabel;
 
 @property (strong, nonatomic) IBOutlet UIToolbar *toolbar;
+
 @property (strong, nonatomic) IBOutlet WheelView *wheelView;
 
 @property (strong, nonatomic) NSMutableDictionary *photoAlbum;
 
-- (IBAction)styleValueChanged:(id)sender;
+- (IBAction)segmentedControlValueChanged:(id)sender;
 
 @end
