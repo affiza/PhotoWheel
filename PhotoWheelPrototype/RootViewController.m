@@ -243,12 +243,6 @@
       [self savePhotoAlbum];
       [[self tableView] reloadData];
    }
-   [self dismissModalViewControllerAnimated:YES];
-}
-
-- (void)nameEditorViewControllerDidCancel:(NameEditorViewController *)controller
-{
-   [self dismissModalViewControllerAnimated:YES];
 }
 
 
