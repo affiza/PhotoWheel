@@ -7,13 +7,21 @@
 //
 
 #import "MasterViewController.h"
-
 #import "DetailViewController.h"
+#import "GlobalPhotoKeys.h"
+
+@interface MasterViewController ()
+@property (readwrite, assign) NSUInteger currentAlbumIndex;
+- (void)readSavedPhotoAlbums;
+- (NSMutableDictionary *)newPhotoAlbumWithName:(NSString *)albumName;
+- (void)savePhotoAlbum;
+@end
 
 @implementation MasterViewController
 
 @synthesize detailViewController = _detailViewController;
 @synthesize data = _data;
+@synthesize currentAlbumIndex = _currentAlbumIndex;
 
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
 {
@@ -40,21 +48,21 @@
    
    self.title = NSLocalizedString(@"Photo Albums", @"Photo albums title");
    
-   [self setData:[[NSMutableOrderedSet alloc] init]];
-   [[self data] addObject:@"A Sample Photo Album"];
-   [[self data] addObject:@"Another Photo Album"];
-
-   [self.tableView selectRowAtIndexPath:[NSIndexPath indexPathForRow:0 
-                                                           inSection:0] 
-                               animated:NO 
-                         scrollPosition:UITableViewScrollPositionMiddle];
-
    UIBarButtonItem *addButton = [[UIBarButtonItem alloc] 
             initWithBarButtonSystemItem:UIBarButtonSystemItemAdd 
                                  target:self 
                                  action:@selector(add:)];   
    [[self navigationItem] setRightBarButtonItem:addButton];
    [[self navigationItem] setLeftBarButtonItem:[self editButtonItem]];
+   
+   [self readSavedPhotoAlbums];
+   
+   [[self detailViewController] setPhotoAlbum:[[self data] objectAtIndex:0]];
+   
+   [[NSNotificationCenter defaultCenter] addObserver:self
+                                            selector:@selector(photoAlbumSaveNeeded:)
+                                                name:kPhotoAlbumSaveNotification
+                                              object:[self detailViewController]];
 }
 
 - (void)add:(id)sender
@@ -133,8 +141,15 @@
    }
    
    // Configure the cell.
-   NSString *text = [[self data] objectAtIndex:[indexPath row]];
-   [[cell textLabel] setText:text];
+   NSDictionary *album = [[self data] objectAtIndex:[indexPath row]];
+   [[cell textLabel] setText:[album objectForKey:kPhotoAlbumNameKey]];
+   
+   if ([indexPath row] == [self currentAlbumIndex]) {
+      [cell setAccessoryType:UITableViewCellAccessoryCheckmark];
+   } else {
+      [cell setAccessoryType:UITableViewCellAccessoryNone];
+   }
+   
    return cell;
 }
 
@@ -179,8 +194,14 @@ forRowAtIndexPath:(NSIndexPath *)indexPath
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-   NSString *name = [[self data] objectAtIndex:[indexPath row]];
-   [[self detailViewController] setDetailItem:name];
+   NSIndexPath *oldCurrentAlbumIndexPath =
+   [NSIndexPath indexPathForRow:[self currentAlbumIndex] inSection:0];
+   [self setCurrentAlbumIndex:[indexPath row]];
+   [tableView reloadRowsAtIndexPaths:
+    [NSArray arrayWithObjects:indexPath, oldCurrentAlbumIndexPath, nil]
+                    withRowAnimation:UITableViewRowAnimationNone];
+   
+   [[self detailViewController] setPhotoAlbum:[[self data] objectAtIndex:[indexPath row]]];
 }
 
 #pragma mark - NameEditorViewControllerDelegate
@@ -190,11 +211,13 @@ forRowAtIndexPath:(NSIndexPath *)indexPath
    NSString *newName = [[controller nameTextField] text];
    if (newName && [newName length] > 0) {
       if ([controller isEditing]) {
-         [[self data] replaceObjectAtIndex:[[controller indexPath] row] 
-                                withObject:newName];
+         NSMutableDictionary *photoAlbum = [[self data]
+                                            objectAtIndex:[[controller indexPath] row]];
+         [photoAlbum setObject:newName forKey:kPhotoAlbumNameKey];
       } else {
-         [[self data] addObject:newName];
+         [[self data] addObject:[self newPhotoAlbumWithName:newName]];
       }
+      [self savePhotoAlbum];
       [[self tableView] reloadData];
    }
 }
@@ -202,6 +225,62 @@ forRowAtIndexPath:(NSIndexPath *)indexPath
 - (void)nameEditorViewControllerDidCancel:(NameEditorViewController *)controller
 {
    NSLog(@"%s", __PRETTY_FUNCTION__);
+}
+
+#pragma mark - Read and save photo albums
+- (NSURL *)photoAlbumPath
+{
+   NSURL *documentsDirectory = [[[NSFileManager defaultManager]
+                                 URLsForDirectory:NSDocumentDirectory
+                                 inDomains:NSUserDomainMask]
+                                lastObject];
+   NSURL *photoAlbumPath = [documentsDirectory
+                            URLByAppendingPathComponent:(NSString *)kPhotoAlbumFilename];
+   return photoAlbumPath;
+}
+
+- (NSMutableDictionary *)newPhotoAlbumWithName:(NSString *)albumName
+{
+   NSMutableDictionary *newAlbum = [NSMutableDictionary dictionary];
+   [newAlbum setObject:albumName forKey:kPhotoAlbumNameKey];
+   [newAlbum setObject:[NSDate date] forKey:kPhotoAlbumDateAddedKey];
+   NSMutableArray *photos = [NSMutableArray array];
+   for (NSUInteger index=0; index<10; index++) {
+      [photos addObject:[NSDictionary dictionary]];
+   }
+   [newAlbum setObject:photos forKey:kPhotoAlbumPhotosKey];
+   return newAlbum;
+}
+
+- (void)savePhotoAlbum
+{
+   [[self data] writeToURL:[self photoAlbumPath] atomically:YES];
+}
+
+- (void)readSavedPhotoAlbums
+{
+   NSMutableArray *savedAlbums = nil;
+   
+   NSData *photoAlbumData = [NSData dataWithContentsOfURL:[self photoAlbumPath]];
+   if (photoAlbumData != nil) {
+      NSMutableArray *albums = [NSPropertyListSerialization
+                                propertyListWithData:photoAlbumData 
+                                options:NSPropertyListMutableContainers 
+                                format:nil 
+                                error:nil];
+      [self setData:albums];
+   } else {
+      savedAlbums = [NSMutableArray array];
+      // Create an initial album
+      [savedAlbums addObject:[self newPhotoAlbumWithName:@"First album"]];
+      [self setData:savedAlbums];
+      [self savePhotoAlbum];
+   }
+}
+
+- (void)photoAlbumSaveNeeded:(NSNotification *)notification
+{
+   [self savePhotoAlbum];
 }
 
 @end

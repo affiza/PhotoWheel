@@ -15,6 +15,6 @@
 <NameEditorViewControllerDelegate>
 
 @property (strong, nonatomic) DetailViewController *detailViewController;
-@property (strong, nonatomic) NSMutableOrderedSet *data;
+@property (strong, nonatomic) NSMutableArray *data;
 
 @end

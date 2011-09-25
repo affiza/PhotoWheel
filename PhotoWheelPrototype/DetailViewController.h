@@ -19,4 +19,6 @@ UINavigationControllerDelegate, UIImagePickerControllerDelegate>
 
 @property (strong, nonatomic) IBOutlet WheelView *wheelView;
 
+@property (strong, nonatomic) NSMutableDictionary *photoAlbum;
+
 @end

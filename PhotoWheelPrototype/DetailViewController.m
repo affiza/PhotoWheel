@@ -8,6 +8,7 @@
 
 #import "DetailViewController.h"
 #import "PhotoWheelViewCell.h"
+#import "GlobalPhotoKeys.h"
 
 @interface DetailViewController ()
 @property (strong, nonatomic) UIPopoverController *masterPopoverController;
@@ -15,6 +16,7 @@
 @property (strong, nonatomic) PhotoWheelViewCell *selectedPhotoWheelViewCell;
 @property (strong, nonatomic) UIActionSheet *actionSheet;
 @property (strong, nonatomic) UIImagePickerController *imagePickerController;
+@property (assign, nonatomic) NSUInteger selectedWheelViewCellIndex;
 - (void)configureView;
 @end
 
@@ -28,6 +30,8 @@
 @synthesize selectedPhotoWheelViewCell = _selectedPhotoWheelViewCell;
 @synthesize actionSheet = _actionSheet;
 @synthesize imagePickerController = _imagePickerController;
+@synthesize photoAlbum = _photoAlbum;
+@synthesize selectedWheelViewCellIndex = _selectedWheelViewCellIndex;
 
 #pragma mark - Managing the detail item
 
@@ -265,6 +269,7 @@ didDismissWithButtonIndex:(NSInteger)buttonIndex
 - (void)cellTapped:(UIGestureRecognizer *)recognizer
 {
    [self setSelectedPhotoWheelViewCell:(PhotoWheelViewCell *)[recognizer view]];
+   [self setSelectedWheelViewCellIndex:[[self data] indexOfObject:[self selectedPhotoWheelViewCell]]];
    
    BOOL hasCamera = 
    [UIImagePickerController 
@@ -281,17 +286,37 @@ didDismissWithButtonIndex:(NSInteger)buttonIndex
    NSLog(@"%s", __PRETTY_FUNCTION__);
 }
 
+#pragma Helpers
+
+- (NSString *)uuidString
+{
+   CFUUIDRef uuid = CFUUIDCreate(kCFAllocatorDefault);
+   CFStringRef uuidCFString = CFUUIDCreateString(kCFAllocatorDefault, uuid);
+   NSString *uuidString = [(__bridge NSString *)uuidCFString copy];
+   CFRelease(uuid);
+   CFRelease(uuidCFString);
+   return uuidString;
+}
+
+- (NSURL *)documentsDirectory
+{
+   NSFileManager *fm = [NSFileManager defaultManager];
+   NSArray *urls = [fm URLsForDirectory:NSDocumentDirectory 
+                              inDomains:NSUserDomainMask];
+   return [urls lastObject];
+}
+
 #pragma mark - UIImagePickerControllerDelegate Methods
 
 - (void)imagePickerController:(UIImagePickerController *)picker
 didFinishPickingMediaWithInfo:(NSDictionary *)info
 {
-   // If the popover controller is available,
+   // If the popover controller is available then
    // assume the photo is selected from the library
    // and not from the camera.
    BOOL takenWithCamera = ([self masterPopoverController] == nil);
    
-   // Dismiss the popover controller if available; 
+   // Dismiss the popover controller if available, 
    // otherwise dismiss the camera view.
    if ([self masterPopoverController]) {
       [[self masterPopoverController] dismissPopoverAnimated:YES];
@@ -300,12 +325,60 @@ didFinishPickingMediaWithInfo:(NSDictionary *)info
       [self dismissModalViewControllerAnimated:YES];
    }
    
-   // Retrieve and display the image.
    UIImage *image = [info objectForKey:UIImagePickerControllerOriginalImage];
-   [[self selectedPhotoWheelViewCell] setImage:image];
+   [self.selectedPhotoWheelViewCell setImage:image];
+   
+   NSData *photoData = UIImageJPEGRepresentation(image, 0.8);
+   
+   NSString *photoFilename = [[self uuidString]
+                              stringByAppendingPathExtension:@"jpg"];
+   [photoData writeToURL:
+    [[self documentsDirectory] 
+     URLByAppendingPathComponent:photoFilename]
+              atomically:YES];
+   
+   NSMutableDictionary *newPhotoEntry = [NSMutableDictionary dictionary];
+   [newPhotoEntry setObject:[NSDate date] forKey:kPhotoDateAddedKey];
+   [newPhotoEntry setObject:photoFilename forKey:kPhotoFilenameKey];
+   
+   NSMutableArray *photos = [[self photoAlbum]
+                             objectForKey:kPhotoAlbumPhotosKey];
+   [photos replaceObjectAtIndex:[self selectedWheelViewCellIndex]
+                     withObject:newPhotoEntry];
+   
+   [[NSNotificationCenter defaultCenter]
+    postNotificationName:kPhotoAlbumSaveNotification
+    object:self];
    
    if (takenWithCamera) {
       UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil);
+   }
+}
+
+- (void)setPhotoAlbum:(NSMutableDictionary *)photoAlbum
+{
+   _photoAlbum = photoAlbum;
+   
+   UIImage *defaultPhoto = [UIImage imageNamed:@"defaultPhoto.png"];
+   for (NSUInteger index=0; index<10; index++) {
+      PhotoWheelViewCell *nub = [[self data] objectAtIndex:index];
+      NSDictionary *photoInfo = [[[self photoAlbum]
+                                  objectForKey:kPhotoAlbumPhotosKey]
+                                 objectAtIndex:index];
+      NSString *photoFilename = [photoInfo objectForKey:kPhotoFilenameKey];
+      NSData *imageData;
+      if (photoFilename != nil) {
+         imageData = [NSData dataWithContentsOfURL:
+                      [[self documentsDirectory]
+                       URLByAppendingPathComponent:photoFilename]];
+      } else {
+         imageData = nil;
+      }
+      if (imageData != nil) {
+         [nub setImage:[UIImage imageWithData:imageData]];
+      } else {
+         [nub setImage:defaultPhoto];
+      }
    }
 }
 
